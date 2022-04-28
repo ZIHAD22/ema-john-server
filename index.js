@@ -12,7 +12,7 @@ app.use(cors())
 app.use(express.json())
 
 // dataBase
-const { MongoClient, ServerApiVersion } = require('mongodb')
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb')
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.eyeab.mongodb.net/myFirstDatabase?retryWrites=true&w=majority`
 const client = new MongoClient(uri, {
   useNewUrlParser: true,
@@ -24,6 +24,7 @@ const dataBaseConnect = async () => {
     await client.connect()
     const productCollection = client.db('emaJohn').collection('product')
 
+    // get all product
     app.get('/product', async (req, res) => {
       const { page, size } = req.query
       const query = {}
@@ -41,10 +42,22 @@ const dataBaseConnect = async () => {
       res.send(product)
     })
 
+    // product count
     app.get('/productCount', async (req, res) => {
       const count = await productCollection.estimatedDocumentCount()
 
       res.send({ count })
+    })
+
+    // product find by ids
+    app.post('/productsByKeys', async (req, res) => {
+      const keys = req.body
+      const ids = keys.map((key) => ObjectId(key))
+      const query = { _id: { $in: ids } }
+      const curser = productCollection.find(query)
+      const products = await curser.toArray()
+
+      res.send(products)
     })
   } finally {
     console.log('dataBase is connected')
